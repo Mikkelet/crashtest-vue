@@ -6,7 +6,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/apis': 'http://localhost:8080',
+      '/apis': {
+        target: 'https://api.crashtest.mthy.dev',
+        changeOrigin: true,
+        secure: true,
+      },
     },
   },
 })
