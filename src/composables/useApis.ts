@@ -1,23 +1,6 @@
 import { ref } from 'vue'
 import type { API, CreateAPIInput, UpdateAPIInput } from '../types/api'
-
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(path, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-    },
-  })
-  if (res.status === 204) return undefined as T
-  const text = await res.text()
-  const body = text ? JSON.parse(text) : null
-  if (!res.ok) {
-    const msg = body && typeof body === 'object' && 'error' in body ? body.error : res.statusText
-    throw new Error(msg || `Request failed: ${res.status}`)
-  }
-  return body as T
-}
+import { request } from '../api/client'
 
 export function useApis() {
   const apis = ref<API[]>([])
