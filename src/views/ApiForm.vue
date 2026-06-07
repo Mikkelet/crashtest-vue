@@ -113,7 +113,10 @@ async function onSubmit() {
           placeholder="e.g. stripe"
           autocomplete="off"
         />
-        <div class="hint">Stable identifier used in the proxy path. Cannot be changed later.</div>
+        <div class="hint">
+          Stable identifier. The proxy serves this API at
+          <code>/p/&lt;id&gt;/…</code>. Cannot be changed later.
+        </div>
       </div>
 
       <div class="field">
@@ -159,3 +162,12 @@ async function onSubmit() {
     </template>
   </form>
 </template>
+
+<style scoped>
+code {
+  background: var(--panel-2);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+</style>

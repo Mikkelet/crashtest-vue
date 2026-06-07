@@ -156,6 +156,8 @@ async function onSubmit() {
             autocomplete="off"
           />
           <div class="hint">
+            Matched against the upstream-relative path (the part after
+            <code>/p/{{ apiId }}</code>).
             <code>*</code> matches anything within a path segment;
             <code>**</code> matches across segments.
           </div>

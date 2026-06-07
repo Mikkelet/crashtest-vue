@@ -41,6 +41,7 @@ async function onDelete(id: string, name: string) {
           <div class="url">{{ api.base_url }}</div>
           <div class="meta">
             <span class="badge">id: {{ api.id }}</span>
+            <span class="badge">proxy: /p/{{ api.id }}/</span>
             <span :class="['badge', api.enabled ? 'on' : 'off']">
               {{ api.enabled ? 'enabled' : 'disabled' }}
             </span>
