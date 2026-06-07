@@ -230,11 +230,11 @@ async function onSubmit() {
 <style scoped>
 .field-row {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 140px minmax(0, 1fr);
   gap: 16px;
 }
 .field-row:has(> .field:nth-child(3)) {
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .field.grow {
   min-width: 0;
@@ -254,7 +254,7 @@ async function onSubmit() {
 }
 .header-row {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: 8px;
   margin-bottom: 6px;
 }
@@ -275,5 +275,15 @@ code {
   padding: 1px 4px;
   border-radius: 4px;
   font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  /* Stack method/path and status/delay/priority into a single column
+     so number inputs stay comfortably tappable */
+  .field-row,
+  .field-row:has(> .field:nth-child(3)) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
 }
 </style>

@@ -135,6 +135,7 @@ a:hover {
 .list .meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 4px;
 }
@@ -159,6 +160,7 @@ a:hover {
 .actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .empty {
@@ -170,6 +172,7 @@ a:hover {
 .form {
   padding: 20px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 .field {
@@ -222,4 +225,46 @@ a:hover {
   padding: 10px 12px;
   border-radius: var(--radius);
   font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .app {
+    padding: 20px 16px 48px;
+  }
+
+  /* Stack the title above its action button instead of squeezing them */
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Larger tap targets for touch */
+  .btn {
+    padding: 10px 14px;
+  }
+
+  /* Let the row's content and actions stack instead of competing for width */
+  .list li {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+  .actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Stack form buttons full-width, primary action on top */
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
