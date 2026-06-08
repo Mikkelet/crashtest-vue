@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useApis } from '../composables/useApis'
 import { useIntercepts } from '../composables/useIntercepts'
+import { BASE_URL } from '../api/client'
 import type { API } from '../types/api'
 
 const props = defineProps<{ apiId: string }>()
@@ -12,6 +13,21 @@ const { rules, loading, error, load, remove, update } = useIntercepts(props.apiI
 const toggling = ref<Record<string, boolean>>({})
 
 const api = ref<API | null>(null)
+
+const proxyBase = `${BASE_URL}/p/${encodeURIComponent(props.apiId)}/`
+const copied = ref(false)
+let copiedTimer: ReturnType<typeof setTimeout> | undefined
+
+async function copyBase() {
+  try {
+    await navigator.clipboard.writeText(proxyBase)
+    copied.value = true
+    clearTimeout(copiedTimer)
+    copiedTimer = setTimeout(() => (copied.value = false), 1500)
+  } catch {
+    // clipboard unavailable (e.g. non-secure context) — ignore
+  }
+}
 
 onMounted(async () => {
   try {
@@ -56,6 +72,13 @@ async function onToggle(id: string, next: boolean) {
         <RouterLink :to="{ name: 'list' }">APIs</RouterLink>
         <span> / </span>
         <span>{{ api?.name ?? apiId }}</span>
+      </div>
+      <div class="proxy-base">
+        <span class="proxy-label">proxy base</span>
+        <code class="proxy-url">{{ proxyBase }}</code>
+        <button type="button" class="copy" :title="`Copy ${proxyBase}`" @click="copyBase">
+          {{ copied ? 'Copied' : 'Copy' }}
+        </button>
       </div>
     </div>
     <RouterLink
@@ -180,5 +203,41 @@ async function onToggle(id: string, next: boolean) {
 }
 .toggle input:disabled ~ .track {
   opacity: 0.5;
+}
+.proxy-base {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.proxy-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.proxy-url {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--text);
+  word-break: break-all;
+}
+.copy {
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.copy:hover {
+  border-color: var(--accent);
+  color: var(--text);
 }
 </style>

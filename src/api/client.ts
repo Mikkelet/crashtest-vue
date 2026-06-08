@@ -1,4 +1,4 @@
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'https://api.crashtest.mthy.dev').replace(/\/$/, '')
+export const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'https://api.crashtest.mthy.dev').replace(/\/$/, '')
 
 export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
