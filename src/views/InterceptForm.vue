@@ -4,7 +4,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useIntercepts } from '../composables/useIntercepts'
 import { INTERCEPT_METHODS, type InterceptMethod } from '../types/intercept'
 
-const props = defineProps<{ apiId: string; id?: string }>()
+const props = defineProps<{ projectId: string; apiId: string; id?: string }>()
 const router = useRouter()
 const { get, create, update } = useIntercepts(props.apiId)
 
@@ -76,7 +76,8 @@ function validate(): string | null {
   if (!form.name.trim()) return 'Name is required'
   if (!form.path_pattern.trim()) return 'Path pattern is required'
   if (!form.path_pattern.startsWith('/')) return 'Path pattern must start with /'
-  if (form.status_code < 100 || form.status_code > 599) return 'Status code must be 100–599'
+  if (form.status_code !== 0 && (form.status_code < 100 || form.status_code > 599))
+    return 'Status code must be 0 (forward) or 100–599'
   if (form.delay_ms < 0 || form.delay_ms > 60000) return 'Delay must be 0–60000 ms'
   return null
 }
@@ -106,7 +107,7 @@ async function onSubmit() {
     } else {
       await create(payload)
     }
-    router.push({ name: 'intercept-list', params: { apiId: props.apiId } })
+    router.push({ name: 'intercept-list', params: { projectId: props.projectId, apiId: props.apiId } })
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to save'
   } finally {
@@ -120,14 +121,16 @@ async function onSubmit() {
     <div>
       <h1>{{ isEdit ? 'Edit rule' : 'New rule' }}</h1>
       <div class="sub">
-        <RouterLink :to="{ name: 'list' }">APIs</RouterLink>
+        <RouterLink :to="{ name: 'project-list' }">Projects</RouterLink>
         <span> / </span>
-        <RouterLink :to="{ name: 'intercept-list', params: { apiId } }">Intercepts</RouterLink>
+        <RouterLink :to="{ name: 'api-list', params: { projectId } }">APIs</RouterLink>
+        <span> / </span>
+        <RouterLink :to="{ name: 'intercept-list', params: { projectId, apiId } }">Intercepts</RouterLink>
         <span> / </span>
         <span>{{ isEdit ? 'Edit' : 'New' }}</span>
       </div>
     </div>
-    <RouterLink class="btn" :to="{ name: 'intercept-list', params: { apiId } }">Cancel</RouterLink>
+    <RouterLink class="btn" :to="{ name: 'intercept-list', params: { projectId, apiId } }">Cancel</RouterLink>
   </div>
 
   <div v-if="error" class="error" style="margin-bottom: 12px">{{ error }}</div>
@@ -148,26 +151,38 @@ async function onSubmit() {
           </select>
         </div>
         <div class="field grow">
-          <label for="path">Path pattern</label>
+          <div class="label-row">
+            <label for="path">Path pattern</label>
+            <span class="help" tabindex="0" aria-label="Path pattern syntax help">
+              i
+              <span class="tooltip" role="tooltip">
+                <span class="tip-lead">
+                  Matched against the path after <code>/p/{{ apiId }}</code>.
+                  <code>*</code> matches one segment, <code>**</code> matches across segments.
+                </span>
+                <span class="examples">
+                  <code>/orders</code><span>exact path</span>
+                  <code>/orders/*</code><span>one segment — <code>/orders/42</code></span>
+                  <code>/orders/**</code><span>any sub-path — <code>/orders/42/items</code></span>
+                  <code>/**</code><span>everything</span>
+                </span>
+              </span>
+            </span>
+          </div>
           <input
             id="path"
             v-model="form.path_pattern"
             placeholder="/v1/checkout/*"
             autocomplete="off"
           />
-          <div class="hint">
-            Matched against the upstream-relative path (the part after
-            <code>/p/{{ apiId }}</code>).
-            <code>*</code> matches anything within a path segment;
-            <code>**</code> matches across segments.
-          </div>
         </div>
       </div>
 
       <div class="field-row">
         <div class="field">
           <label for="status">Status code</label>
-          <input id="status" v-model.number="form.status_code" type="number" min="100" max="599" />
+          <input id="status" v-model.number="form.status_code" type="number" min="0" max="599" />
+          <div class="hint">Use <code>0</code> to forward the upstream response (still applies delay).</div>
         </div>
         <div class="field">
           <label for="delay">Delay (ms)</label>
@@ -218,7 +233,7 @@ async function onSubmit() {
       </div>
 
       <div class="form-actions">
-        <RouterLink class="btn" :to="{ name: 'intercept-list', params: { apiId } }">Cancel</RouterLink>
+        <RouterLink class="btn" :to="{ name: 'intercept-list', params: { projectId, apiId } }">Cancel</RouterLink>
         <button class="btn btn-primary" type="submit" :disabled="submitting">
           {{ submitting ? 'Saving…' : isEdit ? 'Save changes' : 'Create rule' }}
         </button>
@@ -232,6 +247,9 @@ async function onSubmit() {
   display: grid;
   grid-template-columns: 140px minmax(0, 1fr);
   gap: 16px;
+  /* Top-align so a field without a hint (e.g. Method) keeps its control at its
+     natural height instead of stretching to match a taller neighbour. */
+  align-items: start;
 }
 .field-row:has(> .field:nth-child(3)) {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -251,6 +269,82 @@ async function onSubmit() {
 .field select:focus {
   outline: none;
   border-color: var(--accent);
+}
+.label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 10px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+.help:hover,
+.help:focus-visible {
+  border-color: var(--accent);
+  color: var(--text);
+  outline: none;
+}
+.tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 10;
+  width: 300px;
+  max-width: 70vw;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.5;
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+  pointer-events: none;
+}
+.tooltip code {
+  background: var(--bg);
+}
+.tip-lead {
+  display: block;
+}
+.examples {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 12px;
+  margin-top: 10px;
+  align-items: baseline;
+}
+.examples > code {
+  justify-self: start;
+  white-space: nowrap;
+}
+.examples > span {
+  color: var(--muted);
+}
+.help:hover .tooltip,
+.help:focus .tooltip {
+  opacity: 1;
+  visibility: visible;
 }
 .header-row {
   display: grid;

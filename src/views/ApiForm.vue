@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useApis } from '../composables/useApis'
 
-const props = defineProps<{ id?: string }>()
+const props = defineProps<{ projectId: string; id?: string }>()
 const router = useRouter()
 const { get, create, update } = useApis()
 
@@ -39,7 +39,6 @@ onMounted(async () => {
 })
 
 function validate(): string | null {
-  if (!isEdit.value && !form.id.trim()) return 'ID is required'
   if (!form.name.trim()) return 'Name is required'
   if (!form.base_url.trim()) return 'Base URL is required'
   try {
@@ -72,14 +71,14 @@ async function onSubmit() {
       })
     } else {
       await create({
-        id: form.id.trim(),
+        project_id: props.projectId,
         name: form.name.trim(),
         base_url: form.base_url.trim(),
         description,
         enabled: form.enabled,
       })
     }
-    router.push({ name: 'list' })
+    router.push({ name: 'api-list', params: { projectId: props.projectId } })
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to save'
   } finally {
@@ -96,7 +95,7 @@ async function onSubmit() {
         Associate a friendly name with the upstream base URL the proxy should forward to.
       </div>
     </div>
-    <RouterLink class="btn" :to="{ name: 'list' }">Cancel</RouterLink>
+    <RouterLink class="btn" :to="{ name: 'api-list', params: { projectId } }">Cancel</RouterLink>
   </div>
 
   <div v-if="error" class="error" style="margin-bottom: 12px">{{ error }}</div>
@@ -104,24 +103,21 @@ async function onSubmit() {
   <form class="panel form" @submit.prevent="onSubmit">
     <div v-if="loading" class="empty">Loading…</div>
     <template v-else>
-      <div class="field">
+      <div v-if="isEdit" class="field">
         <label for="id">ID</label>
-        <input
-          id="id"
-          v-model="form.id"
-          :disabled="isEdit"
-          placeholder="e.g. stripe"
-          autocomplete="off"
-        />
+        <input id="id" v-model="form.id" disabled autocomplete="off" />
         <div class="hint">
-          Stable identifier. The proxy serves this API at
-          <code>/p/&lt;id&gt;/…</code>. Cannot be changed later.
+          Stable identifier. The proxy serves this API at <code>/p/{{ form.id }}/…</code>.
         </div>
       </div>
 
       <div class="field">
         <label for="name">Name</label>
         <input id="name" v-model="form.name" placeholder="e.g. Stripe Payments" autocomplete="off" />
+        <div v-if="!isEdit" class="hint">
+          A unique, URL-safe ID is generated automatically from the name and used as the
+          proxy path <code>/p/&lt;id&gt;/…</code>.
+        </div>
       </div>
 
       <div class="field">
@@ -154,7 +150,7 @@ async function onSubmit() {
       </div>
 
       <div class="form-actions">
-        <RouterLink class="btn" :to="{ name: 'list' }">Cancel</RouterLink>
+        <RouterLink class="btn" :to="{ name: 'api-list', params: { projectId } }">Cancel</RouterLink>
         <button class="btn btn-primary" type="submit" :disabled="submitting">
           {{ submitting ? 'Saving…' : isEdit ? 'Save changes' : 'Create API' }}
         </button>

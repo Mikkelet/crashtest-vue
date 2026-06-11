@@ -1,5 +1,6 @@
 export interface API {
   id: string
+  project_id: string
   name: string
   base_url: string
   description?: string | null
@@ -9,7 +10,7 @@ export interface API {
 }
 
 export interface CreateAPIInput {
-  id: string
+  project_id: string
   name: string
   base_url: string
   description?: string | null

@@ -1,18 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { useApis } from '../composables/useApis'
 import { useIntercepts } from '../composables/useIntercepts'
 import { BASE_URL } from '../api/client'
-import type { API } from '../types/api'
 
-const props = defineProps<{ apiId: string }>()
+const props = defineProps<{ projectId: string; apiId: string }>()
 
-const { get: getApi } = useApis()
 const { rules, loading, error, load, remove, update } = useIntercepts(props.apiId)
 const toggling = ref<Record<string, boolean>>({})
-
-const api = ref<API | null>(null)
 
 const proxyBase = `${BASE_URL}/p/${encodeURIComponent(props.apiId)}/`
 const copied = ref(false)
@@ -29,14 +24,7 @@ async function copyBase() {
   }
 }
 
-onMounted(async () => {
-  try {
-    api.value = await getApi(props.apiId)
-  } catch {
-    // ignore — the rules list will still load or show its own error
-  }
-  await load()
-})
+onMounted(load)
 
 async function onDelete(id: string, name: string) {
   if (!confirm(`Delete intercept rule "${name}"?`)) return
@@ -68,11 +56,6 @@ async function onToggle(id: string, next: boolean) {
   <div class="header">
     <div>
       <h1>Intercepts</h1>
-      <div class="sub">
-        <RouterLink :to="{ name: 'list' }">APIs</RouterLink>
-        <span> / </span>
-        <span>{{ api?.name ?? apiId }}</span>
-      </div>
       <div class="proxy-base">
         <span class="proxy-label">proxy base</span>
         <code class="proxy-url">{{ proxyBase }}</code>
@@ -83,7 +66,7 @@ async function onToggle(id: string, next: boolean) {
     </div>
     <RouterLink
       class="btn btn-primary"
-      :to="{ name: 'intercept-new', params: { apiId } }"
+      :to="{ name: 'intercept-new', params: { projectId, apiId } }"
     >
       + New rule
     </RouterLink>
@@ -104,7 +87,7 @@ async function onToggle(id: string, next: boolean) {
             <span class="method">{{ r.method }}</span>
             {{ r.path_pattern }}
             →
-            <span class="status">{{ r.status_code }}</span>
+            <span class="status">{{ r.status_code === 0 ? 'forward' : r.status_code }}</span>
             <span v-if="r.delay_ms > 0" class="delay">+{{ r.delay_ms }}ms</span>
           </div>
           <div class="meta">
@@ -124,7 +107,7 @@ async function onToggle(id: string, next: boolean) {
         <div class="actions">
           <RouterLink
             class="btn"
-            :to="{ name: 'intercept-edit', params: { apiId, id: r.id } }"
+            :to="{ name: 'intercept-edit', params: { projectId, apiId, id: r.id } }"
           >
             Edit
           </RouterLink>
